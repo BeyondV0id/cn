@@ -1,0 +1,69 @@
+# Implementation of Go-Back-N protocol Using NS2 Simulation
+# Extracted from Week 07 Programs
+
+set ns [new Simulator]
+
+# Open NAM trace file
+set nf [open Go-Back-N.nam w]
+$ns namtrace-all $nf
+
+# Open Trace file
+set f [open Go-Back-N.tr w]
+$ns trace-all $f
+
+# Define finish procedure
+proc finish {} {
+    global ns
+    $ns flush-trace
+    puts "running nam..."
+    exec nam Go-Back-N.nam &
+    exit 0
+}
+
+# Create Nodes
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+set n3 [$ns node]
+
+# Labels and Colors
+$ns at 0.0 "$n0 label Sender"
+$ns at 0.0 "$n1 label Receiver"
+$n0 color brown
+$n1 color red
+
+# Create Links
+$ns duplex-link $n0 $n2 1Mb 20ms DropTail
+$ns duplex-link $n2 $n3 1Mb 20ms DropTail
+$ns duplex-link $n3 $n1 1Mb 20ms DropTail
+
+# Set Tracing for TCP
+Agent/TCP set nam_tracevar_ true
+
+# Setup TCP Agent (Sender)
+set tcp [new Agent/TCP]
+$tcp set windowInit_ 2
+$tcp set maxcwnd_ 2
+$ns attach-agent $n0 $tcp
+
+# Setup TCP Sink (Receiver)
+set sink [new Agent/TCPSink]
+$ns attach-agent $n1 $sink
+$ns connect $tcp $sink
+
+# Simulate Link Failure (to trigger Go-Back-N behavior)
+$ns rtmodel-at 1.80 down $n2 $n3
+$ns rtmodel-at 1.91 up $n2 $n3
+
+# Setup FTP Application
+set ftp [new Application/FTP]
+$ftp attach-agent $tcp
+
+# Scheduling Events
+$ns at 0.1 "$ftp start"
+$ns at 5.68 "$ftp stop"
+$ns at 6.8 "$ns detach-agent $n0 $tcp ; $ns detach-agent $n1 $sink"
+$ns at 7.0 "finish"
+
+# Run Simulation
+$ns run

@@ -1,0 +1,114 @@
+[11:55 am, 13/11/2025] HARSHA: # TCP ON DIFFERENT PAIRS OF SYSTEM USING NS2 SIMULATION
+# Extracted from Week 10 Programs
+
+set ns [new Simulator]
+
+# Define colors for data flow
+$ns color 1 Blue
+$ns color 2 Red
+
+# Open NAM trace file
+set file2 [open out.nam w]
+$ns namtrace-all $file2
+
+# Define finish procedure
+proc finish {} {
+    global ns file2
+    $ns flush-trace
+    close $file2
+    exec nam out.nam &
+    exit 0
+}
+
+# Create Nodes
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+
+# Create Links
+$ns duplex-link $n0 $n2 10Mb 10ms DropTail
+$ns duplex-link $n1 $n2 10Mb 10ms DropTail
+
+# Setup TCP Connection (Node 0 to Node 1)
+set tcp [new Agent/TCP/Newreno]
+$ns attach-agent $n0 $tcp
+set tcp1 [new Agent/TCP/Newreno]
+$ns attach-agent $n1 $tcp1
+$ns connect $tcp $tcp1
+
+# Flow identification …
+[11:55 am, 13/11/2025] HARSHA: # UDP ON DIFFERENT PAIRS OF SYSTEM USING NS2 SIMULATION
+# Extracted from Week 10 Programs (Page 38)
+
+set ns [new Simulator]
+
+# Define colors
+$ns color 1 Blue
+$ns color 2 Red
+
+# Open NAM trace file
+set file2 [open udpout1.nam w]
+$ns namtrace-all $file2
+
+# Define finish procedure
+proc finish {} {
+    global ns file2
+    $ns flush-trace
+    close $file2
+    puts "running nam"
+    exec nam udpout1.nam &
+    exit 0
+}
+
+# Create Nodes
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+set n3 [$ns node]
+set n4 [$ns node]
+
+# Create Links
+$ns duplex-link $n0 $n2 2Mb 10ms DropTail
+$ns duplex-link $n1 $n2 2Mb 10ms DropTail
+$ns duplex-link $n0 $n3 2Mb 10ms DropTail
+$ns duplex-link $n1 $n3 2Mb 10ms DropTail
+$ns duplex-link $n0 $n4 2Mb 10ms DropTail
+$ns duplex-link $n1 $n4 2Mb 10ms DropTail
+
+# Setup UDP Connection 1
+set udp [new Agent/UDP]
+$ns attach-agent $n0 $udp
+set null [new Agent/Null]
+$ns attach-agent $n1 $null
+$ns connect $udp $null
+
+# Setup UDP Connection 2
+set udp1 [new Agent/UDP]
+$ns attach-agent $n1 $udp1
+set null1 [new Agent/Null]
+$ns attach-agent $n0 $null1
+$ns connect $udp1 $null1
+
+# Set Flow IDs
+$udp set fid_ 1
+$udp1 set fid_ 2
+
+# Setup CBR Traffic over UDP 1
+set cbr [new Application/Traffic/CBR]
+$cbr attach-agent $udp
+$cbr set type_ CBR
+
+# Setup CBR Traffic over UDP 2
+set cbr1 [new Application/Traffic/CBR]
+$cbr1 attach-agent $udp1
+$cbr1 set type_ CBR
+
+# Scheduling Events
+$ns at 0.1 "$cbr start"
+$ns at 0.1 "$cbr1 start"
+$ns at 0.5 "$cbr stop"
+$ns at 0.5 "$cbr1 stop"
+$ns at 3.05 "finish"
+
+# Run Simulation
+$ns run
